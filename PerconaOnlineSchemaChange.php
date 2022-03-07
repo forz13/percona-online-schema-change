@@ -178,7 +178,7 @@ class PerconaOnlineSchemaChange extends BaseObject
         if (Yii::$app->db instanceof Connection) {
             Yii::$app->db->close();
         }
-        if (Yii::$app->cache instanceof Cache) {
+        if (Yii::$app->cache instanceof Cache && Yii::$app->cache->redis) {
             Yii::$app->cache->redis->close();
         }
     }

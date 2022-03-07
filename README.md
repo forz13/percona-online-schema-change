@@ -1,26 +1,25 @@
-
-Компонент PerconaOnlineSchemaChange - PHP обёртка над утилитой pt-online-schema-change от Percona - 
-предназачен для выполнения Alter table без блокировок таблицы.
-
+PerconaOnlineSchemaChange component - PHP wrapper for Percona's pt-online-schema-change utility -
+designed to perform Alter table without table locks.
 
 
-Используя этот компонент нужно будет писать alter table на большие таблицы в Yii миграциях.
-Нужно использовать нетразакционные методы (up()/down()), так как миграция может 
-выполняться длительное количество времени, и транзакция может отвалиться по таймауту.
+
+Using this component, you will need to write alter table on large tables in Yii migrations.
+You need to use non-transactional methods (up()/down()) as migration can
+run for a long time, and the transaction may timeout.
 
 ```php
    public function up(){
         
       /**
       * @var $changer PerconaOnlineSchemaChange
-      */  
+      */
       $changer = \Yii::$app->perconaOnlineSchemaChange;
       try{
            $changer->run('tbl_order', 'ADD COLUMN test000 INT(10)',
             [
               'alterForeignKeysMethod' => $changer::ALTER_FOREIGN_KEY_DROP_SWAP,
-              'execute'                => true,
-              'debug'                  => false
+              'execute' => true,
+              'debug' => false
             ]);
             return true;
       } catch (RuntimeException $ex){
@@ -29,29 +28,34 @@
       }
     }
 ```
+
+execute - true - execute the script, false - check its correctness. The default is false.
+
+debug - enable debug mode or not. The default is false.
+
+alterForeignKeysMethod - how to change foreign keys to point to a new table.
+The default is 'drop_swap'.
+
+
+
+Operations allowed to be performed and their features:
+
+1. In each Yii migration through this component, only 1 table change operation should be performed.
+
+
+2. Changes can only be made on tables containing a PRIMARY KEY.
+
+
+4. Permitted operations: ADD COLUMN, DROP COLUMN, MODIFY COLUMN, ADD INDEX, DROP INDEX, ADD FOREIGN KEY, DROP FOREIGN KEY.
+
+
+5. When adding a column with NOT NULL, you must specify the default value. 
+
+
+6. If we add a foreign key, for example with the name fk_foo,
+then in order to delete it through a rollback to down, you will need to refer to the key through an underscore:
  
- execute - true - выполнить скрипт, false -  проверит его корректность. По умолчанию - false.
- 
- debug - включить режим дебага или нет. По умолчанию false.
- 
- alterForeignKeysMethod - как изменить внешние ключи, чтобы они ссылались на новую таблицу. 
- По умолчанию - 'drop_swap'.  
- 
- 
- 
- Операции допустимые для выполенения и их особенности:
- 
- 1.В каждой Yii миграции через данный компонент должна быть выполнена только 1 операция изменения таблицы.
- 
- 2.Изменения могут быть выполнены только на таблицах содержащих PRIMARY KEY.
-  
- 3.Разрешенные операции: ADD COLUMN, DROP COLUMN, MODIFY COLUMN, ADD INDEX, DROP INDEX, ADD FOREIGN KEY, DROP FOREIGN KEY.
- 
- 4.При добавлениии колонки с NOT NULL нужно обязательно указать default value.
- 
- 5.Если мы добавленяем foreign key, к примеру с именем fk_foo, 
- то чтобы его в удалить через откат в down нужно будет обратиться к ключу через подчеркивание:
- ```sql
+```sql
  DROP FOREIGN KEY _fk_foo
  ```
                         
